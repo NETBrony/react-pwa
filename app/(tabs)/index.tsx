@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, useWindowDimensions, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import moment from 'moment';
-import { LineChart } from 'react-native-chart-kit';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Rect, Text as TextSVG, Svg } from 'react-native-svg'; // จำเป็นสำหรับ Tooltip
+import { LineChart } from 'react-native-gifted-charts';
 
 import { AnimatedToggle, PulseIndicator } from '@/components/CyberControls';
 import DashboardCard from '@/components/DashboardCard';
 import { Colors } from '@/constants/Colors';
-import { useMqtt } from '@/hooks/useMqtt';
+import { useMqtt, ChartDataPoint } from '@/hooks/useMqtt';
 import { getHomeStyles } from '@/styles/HomeStyles';
 
 export default function HomeScreen() {
@@ -17,43 +16,54 @@ export default function HomeScreen() {
   const isDesktop = width > 768; 
   const styles = getHomeStyles(isDesktop);
   
-  const { connectionStatus, temp, humi, isLightOn, tempData, humiData, chartLabels, toggleLight } = useMqtt();
+  const { connectionStatus, temp, humi, isLightOn, tempChartData, humiChartData, toggleLight } = useMqtt();
   const [currentTime, setCurrentTime] = useState(moment());
-
-  // State สำหรับ Tooltip (กดแล้วโชว์ค่า)
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0, index: 0 });
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(moment()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const chartWidth = width > 0 ? (isDesktop ? width - 48 : width - 32) : 300;
+  const chartWidth = width > 0 ? (isDesktop ? width - 120 : width - 60) : 300;
 
-  const chartConfig = (color: string) => ({
-    backgroundGradientFrom: Colors.cardBg, backgroundGradientTo: Colors.cardBg,
-    decimalPlaces: 1, color: (opacity = 1) => color, labelColor: () => Colors.textSub,
-    propsForDots: { r: "5", strokeWidth: "2", stroke: Colors.background },
-    propsForBackgroundLines: { strokeDasharray: "" }, strokeWidth: 3,
-  });
-
-  // ฟังก์ชันวาด Tooltip
-  const renderTooltip = () => {
-      if (!tooltipPos.visible) return null;
-      return (
-          <View>
-              <Svg>
-                  <Rect x={tooltipPos.x - 30} y={tooltipPos.y - 40} width="60" height="35" fill={Colors.cardBg} stroke={Colors.primary} strokeWidth="1" rx="8" />
-                  <TextSVG x={tooltipPos.x} y={tooltipPos.y - 23} fill={Colors.text} fontSize="12" fontWeight="bold" textAnchor="middle">{tooltipPos.value}</TextSVG>
-                  <TextSVG x={tooltipPos.x} y={tooltipPos.y - 10} fill={Colors.textSub} fontSize="9" textAnchor="middle">{chartLabels[tooltipPos.index]}</TextSVG>
-              </Svg>
-          </View>
-      );
+  // --- ฟังก์ชันสร้าง Tooltip (ปรับปรุงใหม่ ไม่ให้ตกขอบ) ---
+  const renderTooltip = (item: ChartDataPoint, color: string, unit: string) => {
+    return (
+      <View style={{
+        // จัดตำแหน่งกล่องให้ลอยอยู่เหนือจุดพอดีๆ
+        marginBottom: 20, 
+        marginLeft: -20, // ขยับซ้ายหน่อยเพื่อให้ Center กับจุด
+        backgroundColor: 'rgba(30, 41, 59, 0.95)', // สีพื้นหลังเข้มโปร่งแสงนิดๆ แบบ Node-RED
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: color,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 140, // กว้างพอสำหรับวันที่ยาวๆ
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 10,
+        zIndex: 1000, // สำคัญ! ให้ลอยทับทุกอย่าง
+      }}>
+        {/* วันที่และเวลา */}
+        <Text style={{color: Colors.textSub, fontSize: 11, marginBottom: 4, fontWeight: '600'}}>
+          {item.fullDate}
+        </Text>
+        {/* ค่าตัวเลข (ทศนิยม 1 ตำแหน่ง) */}
+        <Text style={{color: Colors.text, fontSize: 16, fontWeight: 'bold'}}>
+          {Number(item.value).toFixed(1)} <Text style={{color: color, fontSize: 12}}>{unit}</Text>
+        </Text>
+      </View>
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} scrollEnabled={!tooltipPos.visible}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         
         {/* HEADER */}
         <View style={styles.header}>
@@ -70,7 +80,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 1. MONITORING (บนสุด) */}
+        {/* 1. MONITORING */}
         <Text style={[styles.sectionTitle, { marginTop: 0 }]}>MONITORING</Text>
         <View style={styles.rowContainer}>
              <DashboardCard style={[styles.cardHalf, { backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: Colors.success, borderWidth: 1 }]}>
@@ -87,7 +97,7 @@ export default function HomeScreen() {
              </DashboardCard>
         </View>
 
-        {/* 2. SYSTEM CONTROL (แยกกล่อง) */}
+        {/* 2. SYSTEM CONTROL */}
         <Text style={styles.sectionTitle}>SYSTEM CONTROL</Text>
         <View style={styles.rowContainer}>
             <DashboardCard style={styles.cardHalf}>
@@ -104,34 +114,83 @@ export default function HomeScreen() {
             </DashboardCard>
         </View>
 
-        {/* 3. ANALYTICS (กราฟย้อนหลัง + Tooltip) */}
-        <View style={{marginTop: 8}}>
-            <Text style={styles.sectionTitle}>ANALYTICS (LAST HOUR)</Text>
+        {/* 3. HISTORY (แก้ไขกราฟ) */}
+        <View style={{marginTop: 8, paddingBottom: 20}}>
+            <Text style={styles.sectionTitle}>ANALYTICS (5 HOURS)</Text>
             
+            {/* กราฟ Temp */}
             <DashboardCard title="TEMPERATURE TREND">
-                <LineChart 
-                    data={{ labels: chartLabels, datasets: [{ data: tempData.length > 0 ? tempData : [0] }] }} 
-                    width={chartWidth} height={220} 
-                    chartConfig={chartConfig(Colors.chartTemp)} 
-                    bezier style={styles.chart} withInnerLines={true} yAxisSuffix="°C" segments={4} 
-                    onDataPointClick={(data) => setTooltipPos({ x: data.x, y: data.y, value: data.value, index: data.index, visible: true })}
-                    decorator={renderTooltip}
-                />
+                {/* เพิ่ม PaddingTop ตรงนี้ เพื่อเผื่อที่ให้ Tooltip ไม่โดนตัด */}
+                <View style={{paddingTop: 40, paddingBottom: 10, marginLeft: -10, overflow: 'visible'}}> 
+                  <LineChart
+                    data={tempChartData.length > 0 ? tempChartData : [{value: 0, label: '', fullDate: ''}]}
+                    width={chartWidth}
+                    height={180}
+                    color={Colors.chartTemp}
+                    thickness={3}
+                    dataPointsColor={Colors.chartTemp}
+                    startFillColor="rgba(16, 185, 129, 0.2)"
+                    endFillColor="rgba(16, 185, 129, 0.01)"
+                    startOpacity={0.9}
+                    endOpacity={0.1}
+                    initialSpacing={20}
+                    noOfSections={4}
+                    // ปรับแต่งแกน Y ให้แสดงทศนิยม 1 ตำแหน่ง
+                    formatYLabel={(value) => parseFloat(value).toFixed(1)} 
+                    yAxisTextStyle={{color: Colors.textSub, fontSize: 10}}
+                    xAxisLabelTextStyle={{color: Colors.textSub, fontSize: 10}}
+                    rulesColor="rgba(255,255,255,0.1)"
+                    backgroundColor="transparent"
+                    curved
+                    // Pointer Config
+                    pointerConfig={{
+                      pointerStripHeight: 140, // ลดความสูงเส้นลงหน่อย
+                      pointerStripColor: Colors.chartTemp,
+                      pointerStripWidth: 2,
+                      pointerColor: Colors.chartTemp,
+                      radius: 6,
+                      // ใช้ renderTooltip ที่แก้แล้ว
+                      pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartTemp, '°C'),
+                    }}
+                  />
+                </View>
             </DashboardCard>
 
+            {/* กราฟ Humidity */}
             <DashboardCard title="HUMIDITY TREND">
-                <LineChart 
-                    data={{ labels: chartLabels, datasets: [{ data: humiData.length > 0 ? humiData : [0] }] }} 
-                    width={chartWidth} height={220} 
-                    chartConfig={chartConfig(Colors.chartHumi)} 
-                    bezier style={styles.chart} withInnerLines={true} yAxisSuffix="%" segments={4} 
-                    onDataPointClick={(data) => setTooltipPos({ x: data.x, y: data.y, value: data.value, index: data.index, visible: true })}
-                    decorator={renderTooltip}
-                />
+                {/* เพิ่ม PaddingTop ให้กราฟล่างด้วย */}
+                <View style={{paddingTop: 40, paddingBottom: 10, marginLeft: -10, overflow: 'visible'}}>
+                  <LineChart
+                    data={humiChartData.length > 0 ? humiChartData : [{value: 0, label: '', fullDate: ''}]}
+                    width={chartWidth}
+                    height={180}
+                    color={Colors.chartHumi}
+                    thickness={3}
+                    dataPointsColor={Colors.chartHumi}
+                    startFillColor="rgba(14, 165, 233, 0.2)"
+                    endFillColor="rgba(14, 165, 233, 0.01)"
+                    startOpacity={0.9}
+                    endOpacity={0.1}
+                    initialSpacing={20}
+                    noOfSections={4}
+                    // ปรับแต่งแกน Y ให้แสดงทศนิยม 1 ตำแหน่ง
+                    formatYLabel={(value) => parseFloat(value).toFixed(1)}
+                    yAxisTextStyle={{color: Colors.textSub, fontSize: 10}}
+                    xAxisLabelTextStyle={{color: Colors.textSub, fontSize: 10}}
+                    rulesColor="rgba(255,255,255,0.1)"
+                    backgroundColor="transparent"
+                    curved
+                    pointerConfig={{
+                      pointerStripHeight: 140,
+                      pointerStripColor: Colors.chartHumi,
+                      pointerStripWidth: 2,
+                      pointerColor: Colors.chartHumi,
+                      radius: 6,
+                      pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartHumi, '%'),
+                    }}
+                  />
+                </View>
             </DashboardCard>
-            
-            {/* กดเพื่อปิด Tooltip */}
-            {tooltipPos.visible && <Text onPress={() => setTooltipPos({ ...tooltipPos, visible: false })} style={{textAlign:'center', color: Colors.textSub, marginTop: 10, padding: 10}}>[ Tap here to close tooltip ]</Text>}
         </View>
 
       </ScrollView>
