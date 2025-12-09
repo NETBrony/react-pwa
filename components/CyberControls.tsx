@@ -32,7 +32,10 @@ export const AnimatedToggle = ({ isOn, onToggle, scale = 1.2 }: ControlProps) =>
 export const PulseIndicator = ({ isOn, scale = 1.2 }: ControlProps) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(0.4)).current;
-  const SIZE = 70 * scale;
+
+  // 👇 กำหนดขนาดแยกกันตรงนี้ครับ (ปรับเลขได้ตามใจชอบเลย)
+  const OUTER_SIZE = 55 * scale; // ขนาดวงแหวนชั้นนอก (ลดเลขนี้ลงถ้าอยากให้วงเล็กลง)
+  const INNER_SIZE = 45 * scale; // ขนาดวงกลมชั้นใน (คงเลขนี้ไว้เท่าเดิมไอคอนจะได้ไม่หด)
 
   useEffect(() => {
     if (isOn) {
@@ -44,9 +47,22 @@ export const PulseIndicator = ({ isOn, scale = 1.2 }: ControlProps) => {
   }, [isOn]);
 
   return (
-    <View style={[controlStyles.container, { width: SIZE, height: SIZE }]}>
-      <Animated.View style={[controlStyles.glowRing, { width: SIZE, height: SIZE, borderRadius: SIZE/2, transform: [{ scale: scaleAnim }], opacity: opacityAnim, backgroundColor: isOn ? Colors.success : 'transparent' }]} />
-      <View style={{ width: SIZE*0.7, height: SIZE*0.7, borderRadius: (SIZE*0.7)/2, backgroundColor: isOn ? Colors.success : 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+    // ใช้ OUTER_SIZE เป็นกล่องหลัก
+    <View style={[controlStyles.container, { width: OUTER_SIZE, height: OUTER_SIZE }]}>
+      
+      {/* วงแหวนชั้นนอก (ใช้ OUTER_SIZE) */}
+      <Animated.View style={[controlStyles.glowRing, { 
+          width: OUTER_SIZE, height: OUTER_SIZE, borderRadius: OUTER_SIZE/2, 
+          transform: [{ scale: scaleAnim }], opacity: opacityAnim, 
+          backgroundColor: isOn ? Colors.success : 'transparent' 
+      }]} />
+      
+      {/* วงกลมชั้นใน (ใช้ INNER_SIZE) */}
+      <View style={{ 
+          width: INNER_SIZE, height: INNER_SIZE, borderRadius: INNER_SIZE/2, 
+          backgroundColor: isOn ? Colors.success : 'rgba(255,255,255,0.05)', 
+          alignItems: 'center', justifyContent: 'center', zIndex: 2 
+      }}>
         <MaterialCommunityIcons name={isOn ? "lightbulb-on" : "lightbulb-off-outline"} size={32 * scale} color={isOn ? "#fff" : Colors.textSub} />
       </View>
     </View>

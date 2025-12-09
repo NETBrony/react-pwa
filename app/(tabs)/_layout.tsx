@@ -1,57 +1,46 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+import { Tabs } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors } from '@/constants/Colors';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
+        headerShown: false, // ซ่อน Header มาตรฐาน (เราทำเองแล้ว)
+        tabBarStyle: {
+          backgroundColor: Colors.cardBg, // สีพื้นหลังแถบเมนู
+          borderTopColor: Colors.primary, // เส้นขอบบนสีฟ้า
+          borderTopWidth: 1,
+          height: Platform.OS === 'web' ? 60 : 60, // ความสูงแถบ
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: Colors.primary, // สีไอคอนตอนเลือก
+        tabBarInactiveTintColor: Colors.textSub, // สีไอคอนตอนไม่เลือก
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: 'bold',
+        },
       }}>
+      
+      {/* 1. หน้า Dashboard (index) */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
+          title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="view-dashboard" size={28} color={color} />
           ),
         }}
       />
+
+      {/* 2. ซ่อนหน้าอื่นๆ ที่เราไม่ได้ใช้ (เช่น explore) */}
       <Tabs.Screen
-        name="two"
+        name="explore"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          href: null, // ซ่อนเมนูนี้
         }}
       />
     </Tabs>
