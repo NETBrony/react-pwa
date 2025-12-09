@@ -15,57 +15,27 @@ export const getHomeStyles = (isDesktop: boolean) => StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   statusText: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
 
-  // --- Grid Layout ---
-  gridContainer: { 
-    flexDirection: isDesktop ? 'row' : 'column', 
-    gap: 16, 
-    marginBottom: 16, 
-    minHeight: isDesktop ? 200 : undefined 
+  // --- Grid System (แยกกล่อง) ---
+  rowContainer: {
+    flexDirection: 'row',
+    gap: 16, // ระยะห่างระหว่างกล่องซ้าย-ขวา
+    marginBottom: 16,
   },
-  cardHalf: { flex: isDesktop ? 1 : 0, width: isDesktop ? undefined : '100%' },
-
-  // --- Control Row (จุดที่ปรับแก้) ---
-  controlRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '100%',
-    
-    // 🔧 Desktop: 32 (ชิดกันตามเดิม)
-    // 🔧 Mobile: เพิ่มเป็น 30 (ให้ห่างกันหน่อย ไม่เบียด)
-    gap: isDesktop ? 32 : 30, 
-    
-    // 🔧 เพิ่ม Padding แนวตั้งให้มือถือเยอะขึ้น (จาก 20 -> 30) เพื่อความโปร่ง
-    paddingVertical: isDesktop ? 0 : 30 
-  },
-  
-  divider: { 
-    width: 1, 
-    backgroundColor: 'rgba(255,255,255,0.1)', 
-    // ปรับความสูงเส้นให้สมดุล
-    height: isDesktop ? 60 : 40 
-  },
-  
-  controlItem: { 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  
-  smallLabel: { 
-    fontSize: 10, 
-    color: Colors.textSub, 
-    marginTop: 10, 
-    letterSpacing: 0.5, 
-    fontWeight: '600' 
+  cardHalf: { 
+    flex: 1, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: isDesktop ? 180 : 160 
   },
 
-  // Sensors
-  centeredContent: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingVertical: 10 },
+  // Content Styles
+  centeredContent: { alignItems: 'center', justifyContent: 'center' },
   sensorIconBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginBottom: 10 },
   sensorTitle: { color: Colors.textSub, fontSize: isDesktop ? 14 : 11, fontWeight: 'bold', marginLeft: 8, letterSpacing: 1 },
-  bigValue: { fontWeight: 'bold', textAlign: 'center', lineHeight: 60, fontSize: isDesktop ? 56 : 36 },
+  bigValue: { fontWeight: 'bold', textAlign: 'center', lineHeight: 40, fontSize: isDesktop ? 48 : 36 },
+  smallLabel: { fontSize: 10, color: Colors.textSub, marginTop: 12, letterSpacing: 0.5, fontWeight: '600', textAlign: 'center' },
 
   // Charts
-  sectionTitle: { color: Colors.text, fontSize: 16, fontWeight: 'bold', marginTop: 16, marginBottom: 12, marginLeft: 4, borderLeftWidth: 4, borderLeftColor: Colors.primary, paddingLeft: 12 },
+  sectionTitle: { color: Colors.text, fontSize: 16, fontWeight: 'bold', marginTop: 8, marginBottom: 12, marginLeft: 4, borderLeftWidth: 4, borderLeftColor: Colors.primary, paddingLeft: 12 },
   chart: { marginVertical: 8, borderRadius: 16 }
 });
