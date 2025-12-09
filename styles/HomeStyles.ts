@@ -15,7 +15,7 @@ export const getHomeStyles = (isDesktop: boolean) => StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   statusText: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
 
-  // Grid Layout
+  // --- Grid Layout ---
   gridContainer: { 
     flexDirection: isDesktop ? 'row' : 'column', 
     gap: 16, 
@@ -24,26 +24,26 @@ export const getHomeStyles = (isDesktop: boolean) => StyleSheet.create({
   },
   cardHalf: { flex: isDesktop ? 1 : 0, width: isDesktop ? undefined : '100%' },
 
-  // --- Control Row (ปรับแก้ระยะห่าง) ---
+  // --- Control Row (จุดที่ปรับแก้) ---
   controlRow: { 
     flexDirection: 'row', 
     justifyContent: 'center', 
     alignItems: 'center', 
     height: '100%',
     
-    // 🔧 Desktop: ลดเหลือ 24 (ให้ชิดกันมากๆ ตามที่ขอ)
-    // 🔧 Mobile: ลดเหลือ 16 (ให้กระชับ ไม่ห่างเกินไป)
-    gap: isDesktop ? 24 : 16, 
+    // 🔧 Desktop: 32 (ชิดกันตามเดิม)
+    // 🔧 Mobile: เพิ่มเป็น 30 (ให้ห่างกันหน่อย ไม่เบียด)
+    gap: isDesktop ? 32 : 30, 
     
-    // เพิ่มพื้นที่แนวตั้งให้ Mobile
-    paddingVertical: isDesktop ? 0 : 20 
+    // 🔧 เพิ่ม Padding แนวตั้งให้มือถือเยอะขึ้น (จาก 20 -> 30) เพื่อความโปร่ง
+    paddingVertical: isDesktop ? 0 : 30 
   },
   
   divider: { 
     width: 1, 
     backgroundColor: 'rgba(255,255,255,0.1)', 
-    // ลดความสูงเส้นคั่นลงให้พอดีกับปุ่มไซส์เล็ก
-    height: isDesktop ? 50 : 30 
+    // ปรับความสูงเส้นให้สมดุล
+    height: isDesktop ? 60 : 40 
   },
   
   controlItem: { 
@@ -54,7 +54,7 @@ export const getHomeStyles = (isDesktop: boolean) => StyleSheet.create({
   smallLabel: { 
     fontSize: 10, 
     color: Colors.textSub, 
-    marginTop: 8, 
+    marginTop: 10, 
     letterSpacing: 0.5, 
     fontWeight: '600' 
   },
