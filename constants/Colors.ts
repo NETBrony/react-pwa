@@ -12,7 +12,7 @@ const CyberTheme = {
   chartTemp: '#10B981',
   chartHumi: '#0EA5E9',
   
-  // ค่าที่ต้องมีกัน Error
+  // ต้องมีค่าพวกนี้ เพื่อกัน Error
   tint: '#0EA5E9',
   icon: '#94A3B8',
   tabIconDefault: '#94A3B8',
@@ -20,9 +20,7 @@ const CyberTheme = {
 };
 
 export const Colors = {
-  // ต้องมี 2 บรรทัดนี้ ไม่งั้น Expo จะ Error "reading light"
-  light: CyberTheme,
-  dark: CyberTheme,
-
+  light: CyberTheme, // ต้องมีบรรทัดนี้
+  dark: CyberTheme,  // ต้องมีบรรทัดนี้
   ...CyberTheme,
 };
