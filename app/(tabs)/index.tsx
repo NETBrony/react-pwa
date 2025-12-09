@@ -9,12 +9,12 @@ import { AnimatedToggle, PulseIndicator } from '@/components/CyberControls';
 import DashboardCard from '@/components/DashboardCard';
 import { Colors } from '@/constants/Colors';
 import { useMqtt } from '@/hooks/useMqtt';
-import { getHomeStyles } from '@/styles/HomeStyles'; // Import Style
+import { getHomeStyles } from '@/styles/HomeStyles';
 
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width > 768; 
-  const styles = getHomeStyles(isDesktop); // Load Style
+  const styles = getHomeStyles(isDesktop);
   
   const { connectionStatus, temp, humi, isLightOn, tempData, humiData, chartLabels, toggleLight } = useMqtt();
   const [currentTime, setCurrentTime] = useState(moment());
@@ -54,16 +54,33 @@ export default function HomeScreen() {
           {/* Controls */}
           <DashboardCard title="SYSTEM CONTROL" style={[styles.cardHalf, {justifyContent: 'center'}]}>
              <View style={styles.controlRow}>
-                <View style={styles.controlItem}><AnimatedToggle isOn={isLightOn} onToggle={toggleLight} scale={isDesktop ? 1.5 : 1.2} /></View>
+                
+                {/* Switch ซ้าย */}
+                <View style={styles.controlItem}>
+                   {/* 🔧 Mobile: ใช้ scale 0.8 (Compact) */}
+                   <AnimatedToggle 
+                      isOn={isLightOn} 
+                      onToggle={toggleLight} 
+                      scale={isDesktop ? 1.5 : 0.8} 
+                   />
+                </View>
+                
                 <View style={styles.divider} />
-                <View style={[styles.controlItem, { paddingBottom: 20 }]}> 
-                <PulseIndicator isOn={isLightOn} scale={isDesktop ? 1.3 : 1.0} />
-                <Text style={styles.smallLabel}>REAL-TIME CHECK</Text>
-              </View>
+                
+                {/* Real-time Check ขวา */}
+                {/* 🔧 เอา padding ออก เพื่อให้มันจัดกึ่งกลางธรรมชาติ (แก้เรื่องลอยสูง/ต่ำ) */}
+                <View style={styles.controlItem}>
+                   <PulseIndicator 
+                      isOn={isLightOn} 
+                      scale={isDesktop ? 1.3 : 0.8} 
+                   />
+                   <Text style={styles.smallLabel}>REAL-TIME CHECK</Text>
+                </View>
+
              </View>
           </DashboardCard>
 
-          {/* Sensors */}
+          {/* Sensors (เหมือนเดิม) */}
           <View style={[styles.cardHalf, { flexDirection: 'row', gap: 16 }]}>
              <DashboardCard style={{flex:1, backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: Colors.success, borderWidth: 1}}>
                 <View style={styles.centeredContent}>
@@ -80,7 +97,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* CHARTS */}
+        {/* CHARTS (เหมือนเดิม) */}
         <View style={{marginTop: 8}}>
             <Text style={styles.sectionTitle}>ANALYTICS</Text>
             <DashboardCard title="TEMPERATURE TREND">
