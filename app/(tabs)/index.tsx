@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import moment from 'moment';
-import { LineChart } from 'react-native-chart-kit';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import moment from 'moment';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors } from '@/constants/Colors';
-import DashboardCard from '@/components/DashboardCard';
-import { useMqtt } from '@/hooks/useMqtt';
 import { AnimatedToggle, PulseIndicator } from '@/components/CyberControls';
+import DashboardCard from '@/components/DashboardCard';
+import { Colors } from '@/constants/Colors';
+import { useMqtt } from '@/hooks/useMqtt';
 import { getHomeStyles } from '@/styles/HomeStyles'; // Import Style
 
 export default function HomeScreen() {
@@ -56,7 +56,10 @@ export default function HomeScreen() {
              <View style={styles.controlRow}>
                 <View style={styles.controlItem}><AnimatedToggle isOn={isLightOn} onToggle={toggleLight} scale={isDesktop ? 1.5 : 1.2} /></View>
                 <View style={styles.divider} />
-                <View style={styles.controlItem}><PulseIndicator isOn={isLightOn} scale={isDesktop ? 1.3 : 1.0} /><Text style={styles.smallLabel}>REAL-TIME CHECK</Text></View>
+                <View style={[styles.controlItem, { paddingBottom: 20 }]}> 
+                <PulseIndicator isOn={isLightOn} scale={isDesktop ? 1.3 : 1.0} />
+                <Text style={styles.smallLabel}>REAL-TIME CHECK</Text>
+              </View>
              </View>
           </DashboardCard>
 

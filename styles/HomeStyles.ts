@@ -1,5 +1,5 @@
-import { StyleSheet } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { StyleSheet } from 'react-native';
 
 export const getHomeStyles = (isDesktop: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
@@ -30,8 +30,21 @@ export const getHomeStyles = (isDesktop: boolean) => StyleSheet.create({
     gap: isDesktop ? 80 : 40 
   },
   divider: { width: 1, backgroundColor: 'rgba(255,255,255,0.1)', height: isDesktop ? 60 : 40 },
-  controlItem: { alignItems: 'center', justifyContent: 'center' },
-  smallLabel: { fontSize: 11, color: Colors.textSub, marginTop: 12, letterSpacing: 0.5, fontWeight: '600' },
+  controlItem:{ 
+    alignItems: 'center',
+    justifyContent: 'center',
+  // paddingTop: 5,
+  // paddingBottom: 5,
+  // paddingLeft: 20,
+  // paddingRight: 20
+  },
+  smallLabel:{
+    fontSize: 11,
+    color: Colors.textSub,
+    marginTop: 2,
+    letterSpacing: 0.5,
+    fontWeight: '600'
+  },
 
   // Sensors
   centeredContent: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingVertical: 10 },
