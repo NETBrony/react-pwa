@@ -24,36 +24,27 @@ export default function HomeScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const chartWidth = width > 0 ? (isDesktop ? width - 120 : width - 60) : 300;
+  // ไม่ต้องคำนวณ width แบบเป๊ะๆ แล้ว เพราะเราจะใช้ Scrollable
+  const chartHeight = 220;
 
-  // --- ฟังก์ชันสร้าง Tooltip (ปรับปรุงใหม่ ไม่ให้ตกขอบ) ---
+  // --- Tooltip Style ---
   const renderTooltip = (item: ChartDataPoint, color: string, unit: string) => {
     return (
       <View style={{
-        // จัดตำแหน่งกล่องให้ลอยอยู่เหนือจุดพอดีๆ
-        marginBottom: 20, 
-        marginLeft: -20, // ขยับซ้ายหน่อยเพื่อให้ Center กับจุด
-        backgroundColor: 'rgba(30, 41, 59, 0.95)', // สีพื้นหลังเข้มโปร่งแสงนิดๆ แบบ Node-RED
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 4,
+        backgroundColor: '#1E293B',
+        padding: 8,
+        borderRadius: 6,
         borderWidth: 1,
         borderColor: color,
         alignItems: 'center',
         justifyContent: 'center',
-        minWidth: 140, // กว้างพอสำหรับวันที่ยาวๆ
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.5,
-        shadowRadius: 4,
-        elevation: 10,
-        zIndex: 1000, // สำคัญ! ให้ลอยทับทุกอย่าง
+        marginBottom: 10, 
+        marginLeft: -10, // จัดกึ่งกลาง
+        minWidth: 110,
+        zIndex: 1000,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4, elevation: 5,
       }}>
-        {/* วันที่และเวลา */}
-        <Text style={{color: Colors.textSub, fontSize: 11, marginBottom: 4, fontWeight: '600'}}>
-          {item.fullDate}
-        </Text>
-        {/* ค่าตัวเลข (ทศนิยม 1 ตำแหน่ง) */}
+        <Text style={{color: Colors.textSub, fontSize: 10, marginBottom: 2}}>{item.fullDate}</Text>
         <Text style={{color: Colors.text, fontSize: 16, fontWeight: 'bold'}}>
           {Number(item.value).toFixed(1)} <Text style={{color: color, fontSize: 12}}>{unit}</Text>
         </Text>
@@ -114,18 +105,24 @@ export default function HomeScreen() {
             </DashboardCard>
         </View>
 
-        {/* 3. HISTORY (แก้ไขกราฟ) */}
+        {/* 3. HISTORY (แก้ใหม่หมดเพื่อให้ Scroll ได้) */}
         <View style={{marginTop: 8, paddingBottom: 20}}>
-            <Text style={styles.sectionTitle}>ANALYTICS (5 HOURS)</Text>
+            <Text style={styles.sectionTitle}>ANALYTICS (SCROLLABLE)</Text>
             
             {/* กราฟ Temp */}
             <DashboardCard title="TEMPERATURE TREND">
-                {/* เพิ่ม PaddingTop ตรงนี้ เพื่อเผื่อที่ให้ Tooltip ไม่โดนตัด */}
-                <View style={{paddingTop: 40, paddingBottom: 10, marginLeft: -10, overflow: 'visible'}}> 
+                {/* overflow: hidden เพื่อให้กราฟอยู่ในการ์ด */}
+                <View style={{paddingVertical: 10, marginLeft: -10, overflow: 'hidden'}}> 
                   <LineChart
                     data={tempChartData.length > 0 ? tempChartData : [{value: 0, label: '', fullDate: ''}]}
-                    width={chartWidth}
-                    height={180}
+                    height={chartHeight}
+                    
+                    // --- 🚀 KEY FEATURES: ทำให้เลื่อนดูประวัติได้ ---
+                    scrollable={true} // เปิดให้เลื่อนซ้ายขวา
+                    scrollToEnd={true} // เริ่มต้นที่จุดล่าสุด (ขวาสุด)
+                    initialSpacing={20} 
+                    spacing={40} // ระยะห่างระหว่างจุด (ยิ่งเยอะยิ่งลากสนุก)
+                    
                     color={Colors.chartTemp}
                     thickness={3}
                     dataPointsColor={Colors.chartTemp}
@@ -133,24 +130,30 @@ export default function HomeScreen() {
                     endFillColor="rgba(16, 185, 129, 0.01)"
                     startOpacity={0.9}
                     endOpacity={0.1}
-                    initialSpacing={20}
                     noOfSections={4}
-                    // ปรับแต่งแกน Y ให้แสดงทศนิยม 1 ตำแหน่ง
-                    formatYLabel={(value) => parseFloat(value).toFixed(1)} 
+                    // แกน Y
+                    formatYLabel={(value) => parseFloat(value).toFixed(1)}
                     yAxisTextStyle={{color: Colors.textSub, fontSize: 10}}
                     xAxisLabelTextStyle={{color: Colors.textSub, fontSize: 10}}
                     rulesColor="rgba(255,255,255,0.1)"
                     backgroundColor="transparent"
                     curved
-                    // Pointer Config
+                    
+                    // --- 🖱️ POINTER CONFIG (แก้ให้จิ้มติดง่าย) ---
                     pointerConfig={{
-                      pointerStripHeight: 140, // ลดความสูงเส้นลงหน่อย
+                      pointerStripHeight: 160,
                       pointerStripColor: Colors.chartTemp,
                       pointerStripWidth: 2,
                       pointerColor: Colors.chartTemp,
                       radius: 6,
-                      // ใช้ renderTooltip ที่แก้แล้ว
+                      // ✅ สำคัญ: ให้ Tooltip ค้างไว้แม้ปล่อยมือ
+                      persistPointer: true, 
+                      pointerComponent: (items: any) => (
+                        <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartTemp, borderWidth: 2, borderColor: 'white'}}/>
+                      ),
                       pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartTemp, '°C'),
+                      autoAdjustPointerLabelPosition: true,
+                      snapToPoint: true,
                     }}
                   />
                 </View>
@@ -158,12 +161,17 @@ export default function HomeScreen() {
 
             {/* กราฟ Humidity */}
             <DashboardCard title="HUMIDITY TREND">
-                {/* เพิ่ม PaddingTop ให้กราฟล่างด้วย */}
-                <View style={{paddingTop: 40, paddingBottom: 10, marginLeft: -10, overflow: 'visible'}}>
+                <View style={{paddingVertical: 10, marginLeft: -10, overflow: 'hidden'}}>
                   <LineChart
                     data={humiChartData.length > 0 ? humiChartData : [{value: 0, label: '', fullDate: ''}]}
-                    width={chartWidth}
-                    height={180}
+                    height={chartHeight}
+                    
+                    // --- ตั้งค่าเหมือนกัน ---
+                    scrollable={true}
+                    scrollToEnd={true}
+                    initialSpacing={20}
+                    spacing={40}
+
                     color={Colors.chartHumi}
                     thickness={3}
                     dataPointsColor={Colors.chartHumi}
@@ -171,9 +179,7 @@ export default function HomeScreen() {
                     endFillColor="rgba(14, 165, 233, 0.01)"
                     startOpacity={0.9}
                     endOpacity={0.1}
-                    initialSpacing={20}
                     noOfSections={4}
-                    // ปรับแต่งแกน Y ให้แสดงทศนิยม 1 ตำแหน่ง
                     formatYLabel={(value) => parseFloat(value).toFixed(1)}
                     yAxisTextStyle={{color: Colors.textSub, fontSize: 10}}
                     xAxisLabelTextStyle={{color: Colors.textSub, fontSize: 10}}
@@ -181,12 +187,18 @@ export default function HomeScreen() {
                     backgroundColor="transparent"
                     curved
                     pointerConfig={{
-                      pointerStripHeight: 140,
+                      pointerStripHeight: 160,
                       pointerStripColor: Colors.chartHumi,
                       pointerStripWidth: 2,
                       pointerColor: Colors.chartHumi,
                       radius: 6,
+                      persistPointer: true, // ✅ จิ้มแล้วค้างไว้
+                      pointerComponent: (items: any) => (
+                        <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartHumi, borderWidth: 2, borderColor: 'white'}}/>
+                      ),
                       pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartHumi, '%'),
+                      autoAdjustPointerLabelPosition: true,
+                      snapToPoint: true,
                     }}
                   />
                 </View>

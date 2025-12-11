@@ -1,6 +1,6 @@
 export const MQTT_CONFIG = {
   // อย่าลืมเปลี่ยน IP เป็นของเครื่องคุณ
-  host: 'ws://192.168.5.249:9001/mqtt', 
+  host: 'ws://192.168.5.168:9001/mqtt', 
   options: {
     clientId: 'farm_pwa_' + Math.random().toString(16).substring(2, 8),
     keepalive: 60,
