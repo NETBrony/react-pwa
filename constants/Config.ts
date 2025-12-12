@@ -1,15 +1,32 @@
+// constants/Config.ts
+
 export const MQTT_CONFIG = {
-  // อย่าลืมเปลี่ยน IP เป็นของเครื่องคุณ
-  host: 'ws://192.168.5.168:9001/mqtt', 
+  // 1. Host: ต้องขึ้นต้นด้วย wss:// (Secure WebSocket) และจบด้วย /mqtt
+  // Port ใช้ 8884 ตามที่ HiveMQ กำหนดสำหรับ WebSocket
+  host: 'wss://e53e2233d1a141699f1204a648c861c2.s1.eu.hivemq.cloud:8884/mqtt', 
+  
   options: {
+    // Client ID สุ่มเลขเพื่อไม่ให้ชนกัน
     clientId: 'farm_pwa_' + Math.random().toString(16).substring(2, 8),
+    
+    // 2. ใส่ User/Pass ที่ตั้งไว้
+    username: 'netbrony',      
+    password: 'Net_112233', 
+    
     keepalive: 60,
-    username: 'netbrony',      // ตามที่คุณระบุ
-    password: 'Net_112233', // <-- ใส่รหัสผ่านตรงนี้
+    clean: true,
+    reconnectPeriod: 1000,
+    connectTimeout: 30 * 1000,
+    
+    // สำคัญ: ตั้งค่า SSL
+    useSSL: true,
+    protocol: 'wss',
   },
+  
+  // Topic เดิมใช้งานได้เลย ไม่ต้องแก้
   topics: {
-    command: 'test/light',
-    status: 'sensor/light_status',
-    sensor: 'sensor/TempHumi',
+    status: 'sensor/light_status', // ฟังสถานะไฟ
+    sensor: 'sensor/TempHumi',     // ฟังค่า Temp/Humi
+    command: 'api/control',        // ส่งคำสั่งเปิดปิด (หรือจะเปลี่ยนเป็น topic mqtt ตรงๆ ก็ได้)
   }
 };

@@ -24,29 +24,29 @@ export default function HomeScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  // ไม่ต้องคำนวณ width แบบเป๊ะๆ แล้ว เพราะเราจะใช้ Scrollable
-  const chartHeight = 220;
+  // คำนวณความกว้างพื้นที่กราฟ
+  const chartWidth = width > 0 ? (isDesktop ? width - 120 : width - 60) : 300;
 
-  // --- Tooltip Style ---
+  // Tooltip Style
   const renderTooltip = (item: ChartDataPoint, color: string, unit: string) => {
     return (
       <View style={{
         backgroundColor: '#1E293B',
-        padding: 8,
+        padding: 6,
         borderRadius: 6,
         borderWidth: 1,
         borderColor: color,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10, 
-        marginLeft: -10, // จัดกึ่งกลาง
-        minWidth: 110,
+        marginBottom: 8, 
+        marginLeft: -10, // ปรับ Center ให้ตรงจุด
+        minWidth: 100,
         zIndex: 1000,
         shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4, elevation: 5,
       }}>
         <Text style={{color: Colors.textSub, fontSize: 10, marginBottom: 2}}>{item.fullDate}</Text>
-        <Text style={{color: Colors.text, fontSize: 16, fontWeight: 'bold'}}>
-          {Number(item.value).toFixed(1)} <Text style={{color: color, fontSize: 12}}>{unit}</Text>
+        <Text style={{color: Colors.text, fontSize: 14, fontWeight: 'bold'}}>
+          {Number(item.value).toFixed(1)} <Text style={{color: color, fontSize: 10}}>{unit}</Text>
         </Text>
       </View>
     );
@@ -105,24 +105,25 @@ export default function HomeScreen() {
             </DashboardCard>
         </View>
 
-        {/* 3. HISTORY (แก้ใหม่หมดเพื่อให้ Scroll ได้) */}
+        {/* 3. HISTORY (Auto-Fit Chart) */}
         <View style={{marginTop: 8, paddingBottom: 20}}>
-            <Text style={styles.sectionTitle}>ANALYTICS (SCROLLABLE)</Text>
+            <Text style={styles.sectionTitle}>ANALYTICS (AUTO FIT)</Text>
             
             {/* กราฟ Temp */}
             <DashboardCard title="TEMPERATURE TREND">
-                {/* overflow: hidden เพื่อให้กราฟอยู่ในการ์ด */}
-                <View style={{paddingVertical: 10, marginLeft: -10, overflow: 'hidden'}}> 
+                <View style={{paddingVertical: 10, alignItems: 'center', overflow: 'visible', paddingRight: 0}}> 
                   <LineChart
                     data={tempChartData.length > 0 ? tempChartData : [{value: 0, label: '', fullDate: ''}]}
-                    height={chartHeight}
                     
-                    // --- 🚀 KEY FEATURES: ทำให้เลื่อนดูประวัติได้ ---
-                    scrollable={true} // เปิดให้เลื่อนซ้ายขวา
-                    scrollToEnd={true} // เริ่มต้นที่จุดล่าสุด (ขวาสุด)
-                    initialSpacing={20} 
-                    spacing={40} // ระยะห่างระหว่างจุด (ยิ่งเยอะยิ่งลากสนุก)
+                    // --- 🔥 1. ปิด Scrollable เพื่อให้มันบีบรูป ---
+                    // scrollable={false} // (ค่า Default คือ false อยู่แล้ว ไม่ต้องใส่ก็ได้)
                     
+                    // --- 🔥 2. ใช้คำสั่งนี้เพื่อบีบกราฟให้พอดีความกว้าง ---
+                    adjustToWidth={true} 
+                    parentWidth={chartWidth}
+                    width={chartWidth}
+
+                    height={180}
                     color={Colors.chartTemp}
                     thickness={3}
                     dataPointsColor={Colors.chartTemp}
@@ -139,21 +140,20 @@ export default function HomeScreen() {
                     backgroundColor="transparent"
                     curved
                     
-                    // --- 🖱️ POINTER CONFIG (แก้ให้จิ้มติดง่าย) ---
+                    // Pointer Config
                     pointerConfig={{
-                      pointerStripHeight: 160,
+                      pointerStripHeight: 140,
                       pointerStripColor: Colors.chartTemp,
                       pointerStripWidth: 2,
                       pointerColor: Colors.chartTemp,
                       radius: 6,
-                      // ✅ สำคัญ: ให้ Tooltip ค้างไว้แม้ปล่อยมือ
-                      persistPointer: true, 
                       pointerComponent: (items: any) => (
                         <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartTemp, borderWidth: 2, borderColor: 'white'}}/>
                       ),
                       pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartTemp, '°C'),
                       autoAdjustPointerLabelPosition: true,
                       snapToPoint: true,
+                      activatePointersOnLongPress: false, 
                     }}
                   />
                 </View>
@@ -161,17 +161,16 @@ export default function HomeScreen() {
 
             {/* กราฟ Humidity */}
             <DashboardCard title="HUMIDITY TREND">
-                <View style={{paddingVertical: 10, marginLeft: -10, overflow: 'hidden'}}>
+                <View style={{paddingVertical: 10, alignItems: 'center', overflow: 'visible', paddingRight: 0}}>
                   <LineChart
                     data={humiChartData.length > 0 ? humiChartData : [{value: 0, label: '', fullDate: ''}]}
-                    height={chartHeight}
                     
-                    // --- ตั้งค่าเหมือนกัน ---
-                    scrollable={true}
-                    scrollToEnd={true}
-                    initialSpacing={20}
-                    spacing={40}
+                    // --- 🔥 ตั้งค่าเหมือนกัน ---
+                    adjustToWidth={true}
+                    parentWidth={chartWidth}
+                    width={chartWidth}
 
+                    height={180}
                     color={Colors.chartHumi}
                     thickness={3}
                     dataPointsColor={Colors.chartHumi}
@@ -187,18 +186,18 @@ export default function HomeScreen() {
                     backgroundColor="transparent"
                     curved
                     pointerConfig={{
-                      pointerStripHeight: 160,
+                      pointerStripHeight: 140,
                       pointerStripColor: Colors.chartHumi,
                       pointerStripWidth: 2,
                       pointerColor: Colors.chartHumi,
                       radius: 6,
-                      persistPointer: true, // ✅ จิ้มแล้วค้างไว้
                       pointerComponent: (items: any) => (
                         <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartHumi, borderWidth: 2, borderColor: 'white'}}/>
                       ),
                       pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartHumi, '%'),
                       autoAdjustPointerLabelPosition: true,
                       snapToPoint: true,
+                      activatePointersOnLongPress: false,
                     }}
                   />
                 </View>
