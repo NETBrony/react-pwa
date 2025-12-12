@@ -1,32 +1,32 @@
-// constants/Config.ts
+// src/constants/Config.ts
 
 export const MQTT_CONFIG = {
-  // 1. Host: ต้องขึ้นต้นด้วย wss:// (Secure WebSocket) และจบด้วย /mqtt
-  // Port ใช้ 8884 ตามที่ HiveMQ กำหนดสำหรับ WebSocket
-  host: 'wss://e53e2233d1a141699f1204a648c861c2.s1.eu.hivemq.cloud:8884/mqtt', 
+  // HiveMQ Host (ไม่ต้องมี wss://)
+  host: 'e53e2233d1a141699f1204a648c861c2.s1.eu.hivemq.cloud',
   
+  // Port สำหรับ WSS (Secure WebSocket)
+  port: 8884,
+  
+  // Path บังคับ
+  path: '/mqtt',
+  
+  // Protocol
+  protocol: 'wss',
+
   options: {
-    // Client ID สุ่มเลขเพื่อไม่ให้ชนกัน
-    clientId: 'farm_pwa_' + Math.random().toString(16).substring(2, 8),
-    
-    // 2. ใส่ User/Pass ที่ตั้งไว้
+    clientId: 'react_pwa_' + Math.random().toString(16).substring(2, 8),
     username: 'netbrony',      
     password: 'Net_112233', 
-    
     keepalive: 60,
     clean: true,
-    reconnectPeriod: 1000,
+    reconnectPeriod: 2000,
     connectTimeout: 30 * 1000,
-    
-    // สำคัญ: ตั้งค่า SSL
-    useSSL: true,
-    protocol: 'wss',
+    useSSL: true, // สำคัญมาก
   },
   
-  // Topic เดิมใช้งานได้เลย ไม่ต้องแก้
   topics: {
-    status: 'sensor/light_status', // ฟังสถานะไฟ
-    sensor: 'sensor/TempHumi',     // ฟังค่า Temp/Humi
-    command: 'api/control',        // ส่งคำสั่งเปิดปิด (หรือจะเปลี่ยนเป็น topic mqtt ตรงๆ ก็ได้)
+    status: 'sensor/light_status', // รับสถานะไฟจริง
+    sensor: 'sensor/TempHumi',     // รับค่า Sensor
+    control: 'api/control',        // ส่งคำสั่ง (ต้องตรงกับใน ESP32)
   }
 };

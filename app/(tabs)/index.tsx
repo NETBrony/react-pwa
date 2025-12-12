@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions, ActivityIndicator } from 'react-native'; // ✅ เพิ่ม ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import moment from 'moment';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,7 +16,9 @@ export default function HomeScreen() {
   const isDesktop = width > 768; 
   const styles = getHomeStyles(isDesktop);
   
-  const { connectionStatus, temp, humi, isLightOn, tempChartData, humiChartData, toggleLight } = useMqtt();
+  // ✅ ดึง isLoading มาใช้ด้วย
+  const { connectionStatus, temp, humi, isLightOn, tempChartData, humiChartData, toggleLight, isLoading } = useMqtt();
+  
   const [currentTime, setCurrentTime] = useState(moment());
 
   useEffect(() => {
@@ -24,29 +26,28 @@ export default function HomeScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  // คำนวณความกว้างพื้นที่กราฟ
   const chartWidth = width > 0 ? (isDesktop ? width - 120 : width - 60) : 300;
 
-  // Tooltip Style
+  // Tooltip
   const renderTooltip = (item: ChartDataPoint, color: string, unit: string) => {
     return (
       <View style={{
         backgroundColor: '#1E293B',
-        padding: 6,
+        padding: 8,
         borderRadius: 6,
         borderWidth: 1,
         borderColor: color,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8, 
-        marginLeft: -10, // ปรับ Center ให้ตรงจุด
-        minWidth: 100,
+        marginLeft: -10,
+        minWidth: 110,
         zIndex: 1000,
         shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4, elevation: 5,
       }}>
         <Text style={{color: Colors.textSub, fontSize: 10, marginBottom: 2}}>{item.fullDate}</Text>
-        <Text style={{color: Colors.text, fontSize: 14, fontWeight: 'bold'}}>
-          {Number(item.value).toFixed(1)} <Text style={{color: color, fontSize: 10}}>{unit}</Text>
+        <Text style={{color: Colors.text, fontSize: 16, fontWeight: 'bold'}}>
+          {Number(item.value).toFixed(1)} <Text style={{color: color, fontSize: 12}}>{unit}</Text>
         </Text>
       </View>
     );
@@ -71,7 +72,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 1. MONITORING */}
+        {/* 1. MONITORING (บน) */}
         <Text style={[styles.sectionTitle, { marginTop: 0 }]}>MONITORING</Text>
         <View style={styles.rowContainer}>
              <DashboardCard style={[styles.cardHalf, { backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: Colors.success, borderWidth: 1 }]}>
@@ -88,15 +89,29 @@ export default function HomeScreen() {
              </DashboardCard>
         </View>
 
-        {/* 2. SYSTEM CONTROL */}
+        {/* 2. SYSTEM CONTROL (กลาง - เพิ่ม Loading UI) */}
         <Text style={styles.sectionTitle}>SYSTEM CONTROL</Text>
-        <View style={styles.rowContainer}>
+        <View style={[styles.rowContainer, { zIndex: 2000, elevation: 10, position: 'relative' }]}>
+            
+            {/* กล่องซ้าย: ปุ่มสวิตช์ */}
             <DashboardCard style={styles.cardHalf}>
                 <View style={styles.centeredContent}>
-                    <AnimatedToggle isOn={isLightOn} onToggle={toggleLight} scale={isDesktop ? 1.4 : 1.0} />
-                    <Text style={styles.smallLabel}>MANUAL SWITCH</Text>
+                    {/* ✅ ถ้ากำลังโหลด (isLoading) ให้โชว์ Spinner แทนปุ่ม */}
+                    {isLoading ? (
+                        <View style={{height: 50, justifyContent: 'center', alignItems: 'center'}}>
+                            <ActivityIndicator size="large" color={Colors.primary} />
+                            <Text style={{color: Colors.textSub, fontSize: 10, marginTop: 8, letterSpacing: 1}}>CHECKING...</Text>
+                        </View>
+                    ) : (
+                        <AnimatedToggle isOn={isLightOn} onToggle={toggleLight} scale={isDesktop ? 1.4 : 1.0} />
+                    )}
+                    
+                    {/* ซ่อน label ตอนโหลด เพื่อความสะอาดตา */}
+                    {!isLoading && <Text style={styles.smallLabel}>MANUAL SWITCH</Text>}
                 </View>
             </DashboardCard>
+
+            {/* กล่องขวา: สถานะจริง */}
             <DashboardCard style={styles.cardHalf}>
                 <View style={styles.centeredContent}>
                     <PulseIndicator isOn={isLightOn} scale={isDesktop ? 1.2 : 0.9} />
@@ -105,55 +120,38 @@ export default function HomeScreen() {
             </DashboardCard>
         </View>
 
-        {/* 3. HISTORY (Auto-Fit Chart) */}
-        <View style={{marginTop: 8, paddingBottom: 20}}>
+        {/* 3. HISTORY (ล่าง) */}
+        <View style={{marginTop: 8, paddingBottom: 20, zIndex: 1}}>
             <Text style={styles.sectionTitle}>ANALYTICS (AUTO FIT)</Text>
             
             {/* กราฟ Temp */}
             <DashboardCard title="TEMPERATURE TREND">
-                <View style={{paddingVertical: 10, alignItems: 'center', overflow: 'visible', paddingRight: 0}}> 
+                <View style={{paddingVertical: 10, alignItems: 'center', paddingRight: 0}}> 
                   <LineChart
                     data={tempChartData.length > 0 ? tempChartData : [{value: 0, label: '', fullDate: ''}]}
-                    
-                    // --- 🔥 1. ปิด Scrollable เพื่อให้มันบีบรูป ---
-                    // scrollable={false} // (ค่า Default คือ false อยู่แล้ว ไม่ต้องใส่ก็ได้)
-                    
-                    // --- 🔥 2. ใช้คำสั่งนี้เพื่อบีบกราฟให้พอดีความกว้าง ---
                     adjustToWidth={true} 
                     parentWidth={chartWidth}
                     width={chartWidth}
-
                     height={180}
                     color={Colors.chartTemp}
                     thickness={3}
                     dataPointsColor={Colors.chartTemp}
                     startFillColor="rgba(16, 185, 129, 0.2)"
                     endFillColor="rgba(16, 185, 129, 0.01)"
-                    startOpacity={0.9}
-                    endOpacity={0.1}
+                    startOpacity={0.9} endOpacity={0.1}
                     noOfSections={4}
-                    // แกน Y
                     formatYLabel={(value) => parseFloat(value).toFixed(1)}
                     yAxisTextStyle={{color: Colors.textSub, fontSize: 10}}
                     xAxisLabelTextStyle={{color: Colors.textSub, fontSize: 10}}
                     rulesColor="rgba(255,255,255,0.1)"
                     backgroundColor="transparent"
                     curved
-                    
-                    // Pointer Config
                     pointerConfig={{
-                      pointerStripHeight: 140,
-                      pointerStripColor: Colors.chartTemp,
-                      pointerStripWidth: 2,
-                      pointerColor: Colors.chartTemp,
-                      radius: 6,
-                      pointerComponent: (items: any) => (
-                        <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartTemp, borderWidth: 2, borderColor: 'white'}}/>
-                      ),
+                      pointerStripHeight: 140, pointerStripColor: Colors.chartTemp, pointerStripWidth: 2,
+                      pointerColor: Colors.chartTemp, radius: 6,
+                      pointerComponent: () => <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartTemp, borderWidth: 2, borderColor: 'white'}}/>,
                       pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartTemp, '°C'),
-                      autoAdjustPointerLabelPosition: true,
-                      snapToPoint: true,
-                      activatePointersOnLongPress: false, 
+                      autoAdjustPointerLabelPosition: true, snapToPoint: true, activatePointersOnLongPress: false,
                     }}
                   />
                 </View>
@@ -161,23 +159,19 @@ export default function HomeScreen() {
 
             {/* กราฟ Humidity */}
             <DashboardCard title="HUMIDITY TREND">
-                <View style={{paddingVertical: 10, alignItems: 'center', overflow: 'visible', paddingRight: 0}}>
+                <View style={{paddingVertical: 10, alignItems: 'center', paddingRight: 0}}>
                   <LineChart
                     data={humiChartData.length > 0 ? humiChartData : [{value: 0, label: '', fullDate: ''}]}
-                    
-                    // --- 🔥 ตั้งค่าเหมือนกัน ---
-                    adjustToWidth={true}
+                    adjustToWidth={true} 
                     parentWidth={chartWidth}
                     width={chartWidth}
-
                     height={180}
                     color={Colors.chartHumi}
                     thickness={3}
                     dataPointsColor={Colors.chartHumi}
                     startFillColor="rgba(14, 165, 233, 0.2)"
                     endFillColor="rgba(14, 165, 233, 0.01)"
-                    startOpacity={0.9}
-                    endOpacity={0.1}
+                    startOpacity={0.9} endOpacity={0.1}
                     noOfSections={4}
                     formatYLabel={(value) => parseFloat(value).toFixed(1)}
                     yAxisTextStyle={{color: Colors.textSub, fontSize: 10}}
@@ -186,18 +180,11 @@ export default function HomeScreen() {
                     backgroundColor="transparent"
                     curved
                     pointerConfig={{
-                      pointerStripHeight: 140,
-                      pointerStripColor: Colors.chartHumi,
-                      pointerStripWidth: 2,
-                      pointerColor: Colors.chartHumi,
-                      radius: 6,
-                      pointerComponent: (items: any) => (
-                        <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartHumi, borderWidth: 2, borderColor: 'white'}}/>
-                      ),
+                      pointerStripHeight: 140, pointerStripColor: Colors.chartHumi, pointerStripWidth: 2,
+                      pointerColor: Colors.chartHumi, radius: 6,
+                      pointerComponent: () => <View style={{height: 12, width: 12, borderRadius: 6, backgroundColor: Colors.chartHumi, borderWidth: 2, borderColor: 'white'}}/>,
                       pointerLabelComponent: (items: any) => renderTooltip(items[0], Colors.chartHumi, '%'),
-                      autoAdjustPointerLabelPosition: true,
-                      snapToPoint: true,
-                      activatePointersOnLongPress: false,
+                      autoAdjustPointerLabelPosition: true, snapToPoint: true, activatePointersOnLongPress: false,
                     }}
                   />
                 </View>

@@ -1,51 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
-import mqtt from 'mqtt';
+import mqtt, { MqttClient } from 'mqtt';
 import moment from 'moment';
-// 1. Import Storage
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { MQTT_CONFIG } from '@/constants/Config';
 
 export interface ChartDataPoint {
   value: number;
   label: string;
   fullDate: string;
-  dataPointText?: string;
 }
 
 export function useMqtt() {
-  const [client, setClient] = useState<mqtt.MqttClient | null>(null);
+  const [client, setClient] = useState<MqttClient | null>(null);
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
-  
-  // Real-time Data
   const [temp, setTemp] = useState(0);
   const [humi, setHumi] = useState(0);
   const [isLightOn, setIsLightOn] = useState(false);
   
-  // Chart Data
+  // ✅ เพิ่ม State นี้: เพื่อบอกว่ากำลังรอผลจาก ESP32
+  const [isLoading, setIsLoading] = useState(false);
+
   const [tempChartData, setTempChartData] = useState<ChartDataPoint[]>([]);
   const [humiChartData, setHumiChartData] = useState<ChartDataPoint[]>([]);
-
   const lastUpdateRef = useRef<number>(0); 
 
-  // --- ฟังก์ชันโหลดข้อมูลเก่าเมื่อเปิดแอพ (Load History) ---
+  // --- 1. Load History (เหมือนเดิม) ---
   useEffect(() => {
-    const loadHistory = async () => {
+    const fetchHistory = async () => {
       try {
-        const savedTemp = await AsyncStorage.getItem('tempHistory');
-        const savedHumi = await AsyncStorage.getItem('humiHistory');
-        
-        if (savedTemp) setTempChartData(JSON.parse(savedTemp));
-        if (savedHumi) setHumiChartData(JSON.parse(savedHumi));
-      } catch (e) {
-        console.log('Failed to load history', e);
-      }
+        const response = await fetch('http://192.168.5.168:1880/api/history');
+        const data = await response.json();
+        if (Array.isArray(data)) {
+            const fmtTemp = data.map((d: any) => ({ value: d.temp, label: moment(d.timestamp).format('HH:mm'), fullDate: moment(d.timestamp).format('D MMM, HH:mm') }));
+            const fmtHumi = data.map((d: any) => ({ value: d.humi, label: moment(d.timestamp).format('HH:mm'), fullDate: moment(d.timestamp).format('D MMM, HH:mm') }));
+            setTempChartData(fmtTemp);
+            setHumiChartData(fmtHumi);
+        }
+      } catch (e) { console.log('History error:', e); }
     };
-    loadHistory();
+    fetchHistory();
   }, []);
 
-  // --- เชื่อมต่อ MQTT ---
+  // --- 2. MQTT Logic ---
   useEffect(() => {
-    const mqttClient = mqtt.connect(MQTT_CONFIG.host, MQTT_CONFIG.options);
+    const connectUrl = `${MQTT_CONFIG.protocol}://${MQTT_CONFIG.host}:${MQTT_CONFIG.port}${MQTT_CONFIG.path}`;
+    const mqttClient = mqtt.connect(connectUrl, MQTT_CONFIG.options);
 
     mqttClient.on('connect', () => {
       setConnectionStatus('Connected');
@@ -57,47 +55,26 @@ export function useMqtt() {
       const payload = message.toString();
 
       if (topic === MQTT_CONFIG.topics.status) {
-        setIsLightOn(payload === '1');
+         console.log("Feedback:", payload);
+         // ✅ เมื่อได้รับผลจาก ESP32 ให้หยุดหมุน และอัพเดตปุ่ม
+         setIsLightOn(payload === '1');
+         setIsLoading(false); // หยุดโหลด
       } 
       else if (topic === MQTT_CONFIG.topics.sensor) {
         try {
           const data = JSON.parse(payload);
-          // อัพเดต Real-time
           setTemp(data.temp);
           setHumi(data.humi);
           
-          // --- LOGIC กราฟ + บันทึกข้อมูล (Save History) ---
           const now = Date.now();
-          const UPDATE_INTERVAL = 60000; // 1 นาที
-          
-          if (now - lastUpdateRef.current > UPDATE_INTERVAL) {
+          if (now - lastUpdateRef.current > 60000) {
             lastUpdateRef.current = now;
-            const momentObj = moment();
-            
-            const newPoint = {
-                label: momentObj.format('HH:mm'),
-                fullDate: momentObj.format('D MMM, HH:mm')
-            };
-
-            const MAX_POINTS = 300; // เก็บ 5 ชม. (300 จุด)
-
-            // อัพเดต State และ Save ลงเครื่องพร้อมกัน
-            setTempChartData(prev => {
-                const newData = [...prev, { ...newPoint, value: data.temp }].slice(-MAX_POINTS);
-                AsyncStorage.setItem('tempHistory', JSON.stringify(newData)); // 💾 บันทึก Temp
-                return newData;
-            });
-
-            setHumiChartData(prev => {
-                const newData = [...prev, { ...newPoint, value: data.humi }].slice(-MAX_POINTS);
-                AsyncStorage.setItem('humiHistory', JSON.stringify(newData)); // 💾 บันทึก Humi
-                return newData;
-            });
+            const newPoint = { label: moment().format('HH:mm'), fullDate: moment().format('D MMM, HH:mm') };
+            const MAX_POINTS = 300; 
+            setTempChartData(prev => [...prev, { ...newPoint, value: data.temp }].slice(-MAX_POINTS));
+            setHumiChartData(prev => [...prev, { ...newPoint, value: data.humi }].slice(-MAX_POINTS));
           }
-
-        } catch (e) {
-          console.error("JSON Error", e);
-        }
+        } catch (e) {}
       }
     });
 
@@ -106,9 +83,35 @@ export function useMqtt() {
     return () => { if (mqttClient) mqttClient.end(); };
   }, []);
 
+  // --- 3. Toggle Function (Strict Mode + Loading) ---
   const toggleLight = () => {
-    if (client) client.publish(MQTT_CONFIG.topics.command, isLightOn ? '0' : '1');
+    if (isLoading) return; // ถ้ากำลังหมุนอยู่ ห้ามกดซ้ำ
+
+    const commandToSend = isLightOn ? '0' : '1';
+
+    if (client && client.connected) {
+      // ✅ เริ่มหมุนติ้วๆ (บอก User ว่ากำลังเช็คสาย...)
+      setIsLoading(true);
+      
+      // ส่งคำสั่งไป ESP32
+      client.publish(MQTT_CONFIG.topics.control, commandToSend);
+
+      // Timeout: ถ้า 3 วิ แล้วเงียบ (สายขาด/เน็ตหลุด) ให้หยุดหมุน
+      setTimeout(() => {
+        setIsLoading((currentLoading) => {
+            if (currentLoading) {
+                console.warn("Timeout: No feedback from ESP32");
+                return false; // หยุดหมุน
+            }
+            return false;
+        });
+      }, 3000);
+      
+    } else {
+      console.warn('MQTT Not Connected');
+    }
   };
 
-  return { connectionStatus, temp, humi, isLightOn, tempChartData, humiChartData, toggleLight };
+  // ส่ง isLoading ออกไปให้ UI ใช้
+  return { connectionStatus, temp, humi, isLightOn, tempChartData, humiChartData, toggleLight, isLoading };
 }
